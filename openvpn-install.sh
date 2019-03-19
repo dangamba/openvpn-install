@@ -1187,12 +1187,14 @@ function listActiveClients () {
     echo ""
     echo "Active clients:"
     tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sort
+    echo ""
 }
 
 function listConnectedClients () {
     echo ""
     echo "Connected clients:"
     cat /var/log/openvpn/status.log | grep --color=never ${NETBASE} | cut -d "," -f 1,2 | sed "s/,/ -> /"
+    echo ""
 }
 
 function manageMenu () {
