@@ -3,6 +3,13 @@
 # Secure OpenVPN server installer for Debian, Ubuntu, CentOS, Fedora and Arch Linux
 # https://github.com/angristan/openvpn-install
 
+# You can customize the VPN base network class here:
+NETBASE="10.8."
+
+
+NETWORK="${NETBASE}0.0"
+SERVERIP="${NETBASE}0.1"
+
 function isRoot () {
 	if [ "$EUID" -ne 0 ]; then
 		return 1
@@ -94,19 +101,19 @@ function installUnbound () {
 			apt-get install -y unbound
 
 			# Configuration
-			echo 'interface: 10.8.0.1
-access-control: 10.8.0.1/24 allow
+			echo "interface: $SERVERIP
+access-control: $SERVERIP/24 allow
 hide-identity: yes
 hide-version: yes
 use-caps-for-id: yes
-prefetch: yes' >> /etc/unbound/unbound.conf
+prefetch: yes" >> /etc/unbound/unbound.conf
 
 		elif [[ "$OS" = "centos" ]]; then
 			yum install -y unbound
 
 			# Configuration
-			sed -i 's|# interface: 0.0.0.0$|interface: 10.8.0.1|' /etc/unbound/unbound.conf
-			sed -i 's|# access-control: 127.0.0.0/8 allow|access-control: 10.8.0.1/24 allow|' /etc/unbound/unbound.conf
+			sed -i "s|# interface: 0.0.0.0$|interface: $SERVERIP|" /etc/unbound/unbound.conf
+			sed -i "s|# access-control: 127.0.0.0/8 allow|access-control: $SERVERIP/24 allow|" /etc/unbound/unbound.conf
 			sed -i 's|# hide-identity: no|hide-identity: yes|' /etc/unbound/unbound.conf
 			sed -i 's|# hide-version: no|hide-version: yes|' /etc/unbound/unbound.conf
 			sed -i 's|use-caps-for-id: no|use-caps-for-id: yes|' /etc/unbound/unbound.conf
@@ -115,8 +122,8 @@ prefetch: yes' >> /etc/unbound/unbound.conf
 			dnf install -y unbound
 
 			# Configuration
-			sed -i 's|# interface: 0.0.0.0$|interface: 10.8.0.1|' /etc/unbound/unbound.conf
-			sed -i 's|# access-control: 127.0.0.0/8 allow|access-control: 10.8.0.1/24 allow|' /etc/unbound/unbound.conf
+			sed -i "s|# interface: 0.0.0.0$|interface: $SERVERIP|" /etc/unbound/unbound.conf
+			sed -i "s|# access-control: 127.0.0.0/8 allow|access-control: $SERVERIP/24 allow|" /etc/unbound/unbound.conf
 			sed -i 's|# hide-identity: no|hide-identity: yes|' /etc/unbound/unbound.conf
 			sed -i 's|# hide-version: no|hide-version: yes|' /etc/unbound/unbound.conf
 			sed -i 's|# use-caps-for-id: no|use-caps-for-id: yes|' /etc/unbound/unbound.conf
@@ -129,15 +136,15 @@ prefetch: yes' >> /etc/unbound/unbound.conf
 
 			mv /etc/unbound/unbound.conf /etc/unbound/unbound.conf.old
 			
-			echo 'server:
+			echo "server:
 	use-syslog: yes
 	do-daemonize: no
 	username: "unbound"
 	directory: "/etc/unbound"
 	trust-anchor-file: trusted-key.key
 	root-hints: root.hints
-	interface: 10.8.0.1
-	access-control: 10.8.0.1/24 allow
+	interface: $SERVERIP
+	access-control: $SERVERIP/24 allow
 	port: 53
 	num-threads: 2
 	use-caps-for-id: yes
@@ -145,7 +152,7 @@ prefetch: yes' >> /etc/unbound/unbound.conf
 	hide-identity: yes
 	hide-version: yes
 	qname-minimisation: yes
-	prefetch: yes' > /etc/unbound/unbound.conf
+	prefetch: yes" > /etc/unbound/unbound.conf
 		fi
 
 		if [[ ! "$OS" =~ (fedora|centos) ]];then
@@ -163,9 +170,9 @@ private-address: ::ffff:0:0/96" >> /etc/unbound/unbound.conf
 		echo 'include: /etc/unbound/openvpn.conf' >> /etc/unbound/unbound.conf
 
 		# Add Unbound 'server' for the OpenVPN subnet
-		echo 'server:
-interface: 10.8.0.1
-access-control: 10.8.0.1/24 allow
+		echo "server:
+interface: $SERVERIP
+access-control: $SERVERIP/24 allow
 hide-identity: yes
 hide-version: yes
 use-caps-for-id: yes
@@ -177,7 +184,7 @@ private-address: 169.254.0.0/16
 private-address: fd00::/8
 private-address: fe80::/10
 private-address: 127.0.0.0/8
-private-address: ::ffff:0:0/96' > /etc/unbound/openvpn.conf
+private-address: ::ffff:0:0/96" > /etc/unbound/openvpn.conf
 	fi
 
 		systemctl enable unbound
@@ -690,7 +697,7 @@ persist-key
 persist-tun
 keepalive 10 120
 topology subnet
-server 10.8.0.0 255.255.255.0
+server $NETWORK 255.255.255.0
 ifconfig-pool-persist ipp.txt" >> /etc/openvpn/server.conf
 
 	# DNS resolvers
@@ -709,7 +716,7 @@ ifconfig-pool-persist ipp.txt" >> /etc/openvpn/server.conf
 			done
 		;;
 		2)
-			echo 'push "dhcp-option DNS 10.8.0.1"' >> /etc/openvpn/server.conf
+			echo "push 'dhcp-option DNS $SERVERIP'" >> /etc/openvpn/server.conf
 		;;
 		3) # Cloudflare
 			echo 'push "dhcp-option DNS 1.0.0.1"' >> /etc/openvpn/server.conf
@@ -857,7 +864,7 @@ verb 3" >> /etc/openvpn/server.conf
 
 	# Script to add rules
 	echo "#!/bin/sh
-iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $NIC -j MASQUERADE
+iptables -t nat -A POSTROUTING -s $NETWORK/24 -o $NIC -j MASQUERADE
 iptables -A INPUT -i tun0 -j ACCEPT
 iptables -A FORWARD -i $NIC -o tun0 -j ACCEPT
 iptables -A FORWARD -i tun0 -o $NIC -j ACCEPT
@@ -872,7 +879,7 @@ ip6tables -A FORWARD -i tun0 -o $NIC -j ACCEPT" >> /etc/iptables/add-openvpn-rul
 
 	# Script to remove rules
 	echo "#!/bin/sh
-iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -o $NIC -j MASQUERADE
+iptables -t nat -D POSTROUTING -s $NETWORK/24 -o $NIC -j MASQUERADE
 iptables -D INPUT -i tun0 -j ACCEPT
 iptables -D FORWARD -i $NIC -o tun0 -j ACCEPT
 iptables -D FORWARD -i tun0 -o $NIC -j ACCEPT
@@ -1176,6 +1183,18 @@ function removeOpenVPN () {
 	fi
 }
 
+function listActiveClients () {
+    echo ""
+    echo "Active clients:"
+    tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sort
+}
+
+function listConnectedClients () {
+    echo ""
+    echo "Connected clients:"
+    cat /var/log/openvpn/status.log | grep --color=never ${NETBASE} | cut -d "," -f 1,2 | sed "s/,/ -> /"
+}
+
 function manageMenu () {
 	clear
 	echo "Welcome to OpenVPN-install!"
@@ -1186,10 +1205,12 @@ function manageMenu () {
 	echo "What do you want to do?"
 	echo "   1) Add a new user"
 	echo "   2) Revoke existing user"
-	echo "   3) Remove OpenVPN"
-	echo "   4) Exit"
-	until [[ "$MENU_OPTION" =~ ^[1-4]$ ]]; do
-		read -rp "Select an option [1-4]: " MENU_OPTION
+	echo "   3) List active clients"
+	echo "   4) List connected clients"
+	echo "   5) Remove OpenVPN"
+	echo "   6) Exit"
+	until [[ "$MENU_OPTION" =~ ^[1-6]$ ]]; do
+		read -rp "Select an option [1-6]: " MENU_OPTION
 	done
 
 	case $MENU_OPTION in
@@ -1200,9 +1221,15 @@ function manageMenu () {
 			revokeClient
 		;;
 		3)
-			removeOpenVPN
+			listActiveClients
 		;;
 		4)
+			listConnectedClients
+		;;
+		5)
+			removeOpenVPN
+		;;
+		6)
 			exit 0
 		;;
 	esac
