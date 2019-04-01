@@ -1199,7 +1199,6 @@ function showLastIp () {
     echo ""
     echo "Last allocated IP: "
     cat /etc/openvpn/ccd/* | cut -d ' ' -f 2 | sort -n | tail -1
-    echo ""
 }
 
 function manageMenu () {
