@@ -1192,7 +1192,7 @@ function listActiveClients () {
 function listConnectedClients () {
     echo ""
     echo "Connected clients:"
-    cat /var/log/openvpn/status.log | grep --color=never ${NETBASE} | cut -d "," -f 1,2 | sed "s/,/ -> /"
+    cat /var/log/openvpn/status.log | grep --color=never ${NETBASE} | cut -d "," -f 1,2 | sed "s/,/ -> /" | sort
 }
 
 function showLastIp () {
