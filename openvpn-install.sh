@@ -1187,13 +1187,18 @@ function listActiveClients () {
     echo ""
     echo "Active clients:"
     tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sort
-    echo ""
 }
 
 function listConnectedClients () {
     echo ""
     echo "Connected clients:"
     cat /var/log/openvpn/status.log | grep --color=never ${NETBASE} | cut -d "," -f 1,2 | sed "s/,/ -> /"
+}
+
+function showLastIp () {
+    echo ""
+    echo "Last allocated IP: "
+    cat /etc/openvpn/ccd/* | cut -d ' ' -f 2 | sort -n | tail -1
     echo ""
 }
 
@@ -1209,10 +1214,11 @@ function manageMenu () {
 	echo "   2) Revoke existing user"
 	echo "   3) List active clients"
 	echo "   4) List connected clients"
-	echo "   5) Remove OpenVPN"
-	echo "   6) Exit"
+	echo "   5) Show last allocated IP"
+	echo "   6) Remove OpenVPN"
+	echo "   7) Exit"
 	until [[ "$MENU_OPTION" =~ ^[1-6]$ ]]; do
-		read -rp "Select an option [1-6]: " MENU_OPTION
+		read -rp "Select an option [1-7]: " MENU_OPTION
 	done
 
 	case $MENU_OPTION in
@@ -1229,9 +1235,12 @@ function manageMenu () {
 			listConnectedClients
 		;;
 		5)
-			removeOpenVPN
+			showLastIp
 		;;
 		6)
+			removeOpenVPN
+		;;
+		7)
 			exit 0
 		;;
 	esac
