@@ -1197,8 +1197,8 @@ function listConnectedClients () {
 
 function showLastIp () {
     echo ""
-    echo "Last allocated IP: "
-    echo "Last allocated IP ends with:" && cat /etc/openvpn/ccd/* | cut -d ' ' -f 2 | cut -d '.' -f 4  | sort -n | tail -1
+    echo "Last allocated IP ends with:"
+    cat /etc/openvpn/ccd/* | cut -d ' ' -f 2 | cut -d '.' -f 4  | sort -n | tail -1
 }
 
 function manageMenu () {
